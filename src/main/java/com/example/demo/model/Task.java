@@ -35,6 +35,30 @@ public class Task {
     @Column(name = "hasFile")
     private Boolean hasFile;
 
+    @Column(name = "fileName")
+    private String fileName;
+
+    @Column(name = "fileUrl")
+    private String fileUrl;
+
+    @Column(name = "fileSize")
+    private String fileSize;
+
+    @Column(name = "fileType")
+    private String fileType;
+
+    @Column(name = "reviewStatus")
+    private String reviewStatus;
+
+    @Column(name = "reviewComment", length = 1000)
+    private String reviewComment;
+
+    @Column(name = "reviewedBy")
+    private String reviewedBy;
+
+    @Column(name = "reviewedAt")
+    private String reviewedAt;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -127,6 +151,70 @@ public class Task {
 
     public void setHasFile(Boolean hasFile) {
         this.hasFile = hasFile;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+
+    public String getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(String fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public String getReviewStatus() {
+        return reviewStatus;
+    }
+
+    public void setReviewStatus(String reviewStatus) {
+        this.reviewStatus = reviewStatus;
+    }
+
+    public String getReviewComment() {
+        return reviewComment;
+    }
+
+    public void setReviewComment(String reviewComment) {
+        this.reviewComment = reviewComment;
+    }
+
+    public String getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public void setReviewedBy(String reviewedBy) {
+        this.reviewedBy = reviewedBy;
+    }
+
+    public String getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(String reviewedAt) {
+        this.reviewedAt = reviewedAt;
     }
 
     public LocalDateTime getCreatedAt() {

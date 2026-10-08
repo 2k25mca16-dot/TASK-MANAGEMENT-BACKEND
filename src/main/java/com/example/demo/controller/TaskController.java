@@ -61,6 +61,15 @@ public class TaskController {
         else if (fileObj != null) hasFile = Boolean.parseBoolean(fileObj.toString());
         task.setHasFile(hasFile);
 
+        if (body.get("fileName") != null) task.setFileName(body.get("fileName").toString());
+        if (body.get("fileUrl") != null) task.setFileUrl(body.get("fileUrl").toString());
+        if (body.get("fileSize") != null) task.setFileSize(body.get("fileSize").toString());
+        if (body.get("fileType") != null) task.setFileType(body.get("fileType").toString());
+        if (body.get("reviewStatus") != null) task.setReviewStatus(body.get("reviewStatus").toString());
+        if (body.get("reviewComment") != null) task.setReviewComment(body.get("reviewComment").toString());
+        if (body.get("reviewedBy") != null) task.setReviewedBy(body.get("reviewedBy").toString());
+        if (body.get("reviewedAt") != null) task.setReviewedAt(body.get("reviewedAt").toString());
+
         Task saved = taskRepository.save(task);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -110,9 +119,57 @@ public class TaskController {
             task.setHasFile(hf instanceof Boolean ? (Boolean) hf : Boolean.parseBoolean(hf.toString()));
         }
 
+        if (body.containsKey("fileName")) task.setFileName((String) body.get("fileName"));
+        if (body.containsKey("fileUrl")) task.setFileUrl((String) body.get("fileUrl"));
+        if (body.containsKey("fileSize")) task.setFileSize((String) body.get("fileSize"));
+        if (body.containsKey("fileType")) task.setFileType((String) body.get("fileType"));
+        if (body.containsKey("reviewStatus")) task.setReviewStatus((String) body.get("reviewStatus"));
+        if (body.containsKey("reviewComment")) task.setReviewComment((String) body.get("reviewComment"));
+        if (body.containsKey("reviewedBy")) task.setReviewedBy((String) body.get("reviewedBy"));
+        if (body.containsKey("reviewedAt")) task.setReviewedAt((String) body.get("reviewedAt"));
+
         taskRepository.save(task);
 
         return ResponseEntity.ok(Map.of("message", "Task updated"));
+    }
+
+    // POST /api/tasks/{id}/review (Manager reviews task / file)
+    @PostMapping("/{id}/review")
+    public ResponseEntity<?> reviewTask(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Optional<Task> opt = taskRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Task not found"));
+        }
+
+        Task task = opt.get();
+        String reviewStatus = (String) body.getOrDefault("reviewStatus", "Approved");
+        String reviewComment = (String) body.getOrDefault("reviewComment", "");
+        String reviewedBy = (String) body.getOrDefault("reviewedBy", "Manager");
+        String reviewedAt = (String) body.getOrDefault("reviewedAt", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+
+        task.setReviewStatus(reviewStatus);
+        task.setReviewComment(reviewComment);
+        task.setReviewedBy(reviewedBy);
+        task.setReviewedAt(reviewedAt);
+
+        // Update task status according to review decision
+        if ("Approved".equalsIgnoreCase(reviewStatus)) {
+            task.setStatus("Completed");
+            task.setCompleted(true);
+        } else if ("Changes Requested".equalsIgnoreCase(reviewStatus) || "Needs Revision".equalsIgnoreCase(reviewStatus)) {
+            task.setStatus("Changes Requested");
+            task.setCompleted(false);
+        } else if ("Rejected".equalsIgnoreCase(reviewStatus)) {
+            task.setStatus("Rejected");
+            task.setCompleted(false);
+        }
+
+        taskRepository.save(task);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Task reviewed successfully",
+                "task", task
+        ));
     }
 
     // DELETE /api/tasks
