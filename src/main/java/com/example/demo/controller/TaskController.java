@@ -70,6 +70,9 @@ public class TaskController {
         if (body.get("reviewedBy") != null) task.setReviewedBy(body.get("reviewedBy").toString());
         if (body.get("reviewedAt") != null) task.setReviewedAt(body.get("reviewedAt").toString());
 
+        if (body.get("secondaryAssignee") != null) task.setSecondaryAssignee(body.get("secondaryAssignee").toString().trim());
+        else if (body.containsKey("secondaryAssignee")) task.setSecondaryAssignee("");
+
         Task saved = taskRepository.save(task);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -110,6 +113,7 @@ public class TaskController {
         }
 
         if (body.containsKey("assignedTo")) task.setAssignedTo((String) body.get("assignedTo"));
+        if (body.containsKey("secondaryAssignee")) task.setSecondaryAssignee((String) body.get("secondaryAssignee"));
         if (body.containsKey("assignedBy")) task.setAssignedBy((String) body.get("assignedBy"));
         if (body.containsKey("type")) task.setType((String) body.get("type"));
         if (body.containsKey("completionNote")) task.setCompletionNote((String) body.get("completionNote"));
@@ -131,6 +135,43 @@ public class TaskController {
         taskRepository.save(task);
 
         return ResponseEntity.ok(Map.of("message", "Task updated"));
+    }
+
+    // POST /api/tasks/{id}/remove-primary (Automatically transfers task to secondary assignee)
+    @PostMapping("/{id}/remove-primary")
+    public ResponseEntity<?> removePrimaryAssignee(@PathVariable Long id) {
+        Optional<Task> opt = taskRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Task not found"));
+        }
+
+        Task task = opt.get();
+        String oldPrimary = task.getAssignedTo();
+        String fallback = task.getSecondaryAssignee();
+
+        if (fallback != null && !fallback.trim().isEmpty() && !fallback.trim().equalsIgnoreCase(oldPrimary)) {
+            task.setAssignedTo(fallback.trim());
+            task.setSecondaryAssignee("");
+            taskRepository.save(task);
+            return ResponseEntity.ok(Map.of(
+                "message", "Primary assignee removed. Task automatically transferred to " + fallback.trim(),
+                "oldPrimary", oldPrimary != null ? oldPrimary : "",
+                "newPrimary", fallback.trim(),
+                "transferred", true,
+                "task", task
+            ));
+        } else {
+            task.setAssignedTo("Unassigned");
+            task.setSecondaryAssignee("");
+            taskRepository.save(task);
+            return ResponseEntity.ok(Map.of(
+                "message", "Primary assignee removed. No secondary assignee found, task is now unassigned.",
+                "oldPrimary", oldPrimary != null ? oldPrimary : "",
+                "newPrimary", "Unassigned",
+                "transferred", false,
+                "task", task
+            ));
+        }
     }
 
     // POST /api/tasks/{id}/review (Manager reviews task / file)

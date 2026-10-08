@@ -24,6 +24,9 @@ public class Task {
     @Column(name = "assignedTo")
     private String assignedTo;
 
+    @Column(name = "secondaryAssignee")
+    private String secondaryAssignee;
+
     @Column(name = "assignedBy")
     private String assignedBy;
 
@@ -223,6 +226,14 @@ public class Task {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getSecondaryAssignee() {
+        return secondaryAssignee;
+    }
+
+    public void setSecondaryAssignee(String secondaryAssignee) {
+        this.secondaryAssignee = secondaryAssignee;
     }
 }
 

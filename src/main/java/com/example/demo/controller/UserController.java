@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
+import com.example.demo.model.Task;
+import com.example.demo.repository.TaskRepository;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -19,6 +22,9 @@ public class UserController {
 
     @Autowired
     private SignupUserRepository userRepository;
+
+    @Autowired
+    private TaskRepository taskRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -179,6 +185,33 @@ public class UserController {
         jdbcTemplate.update("DELETE FROM team_members WHERE LOWER(email) = ?", cleanEmail);
         jdbcTemplate.update("DELETE FROM individual_users WHERE LOWER(email) = ?", cleanEmail);
 
-        return ResponseEntity.ok(Map.of("message", "User deleted"));
+        // Automatically transfer tasks assigned to the removed user to their secondary/backup person
+        try {
+            List<Task> allTasks = taskRepository.findAll();
+            for (Task t : allTasks) {
+                boolean changed = false;
+                if (t.getAssignedTo() != null && t.getAssignedTo().trim().equalsIgnoreCase(cleanEmail)) {
+                    String fallback = t.getSecondaryAssignee();
+                    if (fallback != null && !fallback.trim().isEmpty() && !fallback.trim().equalsIgnoreCase(cleanEmail)) {
+                        t.setAssignedTo(fallback.trim());
+                        t.setSecondaryAssignee("");
+                    } else {
+                        t.setAssignedTo("Unassigned");
+                        t.setSecondaryAssignee("");
+                    }
+                    changed = true;
+                } else if (t.getSecondaryAssignee() != null && t.getSecondaryAssignee().trim().equalsIgnoreCase(cleanEmail)) {
+                    t.setSecondaryAssignee("");
+                    changed = true;
+                }
+                if (changed) {
+                    taskRepository.save(t);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error transferring tasks upon user deletion: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(Map.of("message", "User deleted and tasks automatically transferred"));
     }
 }
